@@ -22,8 +22,11 @@ A major addition to this project is the fully customized, real-time image parsin
 7. **Upper-Body Garment Warping:** Automatically calculates bounding vectors to scale, position, and static-warp the target cloth to fit perfectly over the user's torso region.
 
 ## Demonstrations & Recordings
-Live video demonstrations, walkthroughs, and screen recordings of the Virtual Try-On application in action can be located locally at:
+Watch the Virtual Try-On application in full action below:
 
+<video src="assets/demo.mp4" controls="controls" style="max-width: 100%;">
+  Your browser does not support the video tag.
+</video>
 
 ## Dataset Structure
 The preprocessing pipeline strictly manages local generation datasets mapped identically to the original DCI-VTON VITON-HD requirements:

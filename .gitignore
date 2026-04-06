@@ -28,7 +28,7 @@ output/
 outputs/
 my_data/
 mydata/
-assets/
+
 warp/
 
 # API keys / Ngrok / Secrets
