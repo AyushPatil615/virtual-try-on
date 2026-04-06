@@ -25,5 +25,25 @@ A major addition to this project is the fully customized, real-time image parsin
 Live video demonstrations, walkthroughs, and screen recordings of the Virtual Try-On application in action can be located locally at:
 `C:\Users\ADMIN\Videos\Screen Recordings`
 
+## Dataset Structure
+The preprocessing pipeline strictly manages local generation datasets mapped identically to the original DCI-VTON VITON-HD requirements:
+
+```text
+├── test_pairs.txt
+└── test/
+    ├── image/person.jpg                           # Original target person image
+    ├── cloth/cloth.jpg                            # Target garment to try on
+    ├── cloth-mask/cloth.jpg                       # Binary mask of the garment
+    ├── image-parse-v3/person.png                  # Full SegFormer semantic segmentation
+    ├── image-parse-agnostic-v3.2/person.png       # Segmentation with upper clothes erased
+    ├── openpose_json/person_keypoints.json        # 18-point MediaPipe keypoint tracking
+    ├── openpose_img/person_rendered.png           # Rendered skeleton overlay
+    ├── image-densepose/person.jpg                 # GrabCut-synthesized pseudo-IUV depth map
+    ├── cloth-warp/cloth.png                       # Initial garment scaling and positioning
+    ├── cloth-warp-mask/cloth.png                  # Initial garment bounds
+    ├── unpaired-cloth-warp/cloth.png              # Dense torso-aware warped garment
+    └── unpaired-cloth-warp-mask/cloth.png         # Torso-aware garment boundary mask
+```
+
 ## Usage
 Simply run the web server initialization script `start_web_server.bat` to start tracking and loading models. Access the server either through `localhost` or via the public tunnel URL provided by the script during runtime.
