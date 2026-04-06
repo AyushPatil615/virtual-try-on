@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv/
+env.bak/
+venv.bak/
+
+# PyTorch Models & Checkpoints
+models/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+
+# Directories to ignore
+PF-AFN/
+data/
+datasets/
+input/
+inputs/
+output/
+outputs/
+my_data/
+mydata/
+assets/
+
+# API keys / Ngrok / Secrets
+.env
+secret*
+ngrok*
+start_web_server.bat
+*.key
+*.pem
+
+# Extra codes & scratch files
+wrp.2.py
+cl.py
+pair.py
+test.py
+test.sh
+train.sh
+test_cv2.py
+final.py
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

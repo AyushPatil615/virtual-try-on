@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DCI-VTON · Virtual Try-On</title>
+  <meta name="description" content="AI-powered virtual try-on: upload a person photo and a garment to see how it looks." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ══════════════════════════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════════════════════════ */
+    :root {
+      --bg:        #0a0a14;
+      --bg2:       #11111e;
+      --bg3:       #16162a;
+      --card:      #1a1a2e;
+      --border:    rgba(108,99,255,0.18);
+      --accent:    #6c63ff;
+      --accent2:   #ff6584;
+      --accent3:   #43e97b;
+      --fg:        #e4e4f0;
+      --fg2:       #8888aa;
+      --fg3:       #555570;
+      --radius:    16px;
+      --radius-sm: 10px;
+      --shadow:    0 8px 40px rgba(0,0,0,0.5);
+      --glow:      0 0 40px rgba(108,99,255,0.18);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 80% 60% at 20% -10%, rgba(108,99,255,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(255,101,132,0.08) 0%, transparent 50%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       ANIMATED BACKGROUND PARTICLES
+    ══════════════════════════════════════════════════════════ */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.07;
+      pointer-events: none;
+      animation: orb-drift 18s ease-in-out infinite alternate;
+    }
+    .bg-orb.orb1 { width: 500px; height: 500px; background: var(--accent);  top: -150px; left: -100px; animation-delay: 0s; }
+    .bg-orb.orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -100px; animation-delay: -6s; }
+    .bg-orb.orb3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; right: 20%; animation-delay: -12s; }
+
+    @keyframes orb-drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(40px, 30px) scale(1.1); }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════════════════════════════ */
+    .page-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════════════════════════ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 0 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 24px rgba(108,99,255,0.4);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 24px rgba(108,99,255,0.4); }
+      50%       { box-shadow: 0 0 40px rgba(108,99,255,0.7); }
+    }
+
+    .logo-text h1 {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #fff, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+
+    .logo-text p {
+      font-size: 12px;
+      color: var(--fg2);
+      margin-top: 3px;
+      font-weight: 400;
+    }
+
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      font-size: 12px;
+      color: var(--fg2);
+      background: var(--bg2);
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent3);
+      box-shadow: 0 0 8px var(--accent3);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       MAIN GRID
+    ══════════════════════════════════════════════════════════ */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 32px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       UPLOAD CARDS
+    ══════════════════════════════════════════════════════════ */
+    .upload-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+    }
+
+    .upload-card:hover,
+    .upload-card.drag-over {
+      border-color: var(--accent);
+      box-shadow: var(--glow);
+    }
+
+    .upload-card.has-image {
+      border-color: rgba(67,233,123,0.3);
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .drop-zone {
+      width: 100%;
+      aspect-ratio: 3/4;
+      max-height: 320px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg3);
+      transition: border-color 0.3s, background 0.3s;
+    }
+
+    .drop-zone img.preview {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: calc(var(--radius-sm) - 2px);
+    }
+
+    .drop-zone .zone-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--fg3);
+      font-size: 13px;
+      text-align: center;
+      padding: 16px;
+      pointer-events: none;
+    }
+
+    .zone-hint .icon { font-size: 32px; line-height: 1; }
+
+    .upload-card input[type="file"] { display: none; }
+
+    .btn-browse {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .btn-browse:hover {
+      background: rgba(108,99,255,0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       CENTER CONTROLS
+    ══════════════════════════════════════════════════════════ */
+    .center-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding-top: 60px;
+    }
+
+    .arrow-icon {
+      font-size: 24px;
+      color: var(--fg3);
+      animation: pulse-arrow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-arrow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50%       { opacity: 1;   transform: scale(1.1); }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       RUN BUTTON
+    ══════════════════════════════════════════════════════════ */
+    #run-btn {
+      position: relative;
+      overflow: hidden;
+      padding: 16px 28px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 30px rgba(108,99,255,0.5);
+      transition: all 0.25s;
+    }
+
+    #run-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(108,99,255,0.65);
+    }
+
+    #run-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    #run-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #run-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.12) 60%, transparent 80%);
+      transform: translateX(-100%);
+    }
+
+    #run-btn:hover:not(:disabled)::after {
+      animation: shimmer 0.6s ease forwards;
+    }
+
+    @keyframes shimmer {
+      to { transform: translateX(100%); }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       PHASE STEPS
+    ══════════════════════════════════════════════════════════ */
+    .phase-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .phase-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--fg3);
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+
+    .phase-step .step-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      border: 1.5px solid var(--fg3);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .phase-step.active  { color: var(--accent); }
+    .phase-step.active  .step-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .phase-step.done    { color: var(--accent3); }
+    .phase-step.done    .step-dot { background: var(--accent3); border-color: var(--accent3); }
+
+    /* ══════════════════════════════════════════════════════════
+       PROGRESS BAR
+    ══════════════════════════════════════════════════════════ */
+    .progress-container {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+
+    .progress-track {
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.6s ease;
+      box-shadow: 0 0 12px rgba(108,99,255,0.6);
+    }
+
+    #status-text {
+      font-size: 11px;
+      color: var(--fg2);
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       LOG TERMINAL
+    ══════════════════════════════════════════════════════════ */
+    .log-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .log-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg2);
+      letter-spacing: 0.05em;
+    }
+
+    .terminal-dots {
+      display: flex; gap: 5px;
+    }
+    .terminal-dots span {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .terminal-dots span:nth-child(1) { background: #ff5f57; }
+    .terminal-dots span:nth-child(2) { background: #febc2e; }
+    .terminal-dots span:nth-child(3) { background: #28c840; }
+
+    #log-output {
+      height: 220px;
+      overflow-y: auto;
+      padding: 14px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      color: var(--fg2);
+      scroll-behavior: smooth;
+    }
+
+    #log-output::-webkit-scrollbar { width: 4px; }
+    #log-output::-webkit-scrollbar-track { background: transparent; }
+    #log-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .log-line { display: block; white-space: pre-wrap; word-break: break-word; }
+    .log-line.ok   { color: #43e97b; }
+    .log-line.hdr  { color: var(--accent); font-weight: 600; }
+    .log-line.err  { color: #ff6b6b; }
+    .log-line.warn { color: #f6d743; }
+
+    /* ══════════════════════════════════════════════════════════
+       RESULT SECTION
+    ══════════════════════════════════════════════════════════ */
+    #result-section {
+      display: none;
+      animation: fadeInUp 0.6s ease;
+    }
+
+    #result-section.visible { display: block; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-card {
+      background: var(--card);
+      border: 1px solid rgba(67,233,123,0.25);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 0 50px rgba(67,233,123,0.06);
+    }
+
+    .result-title {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #fff, var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .result-images {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .result-img-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-img-col .img-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fg2);
+    }
+
+    .result-img-col .img-label.highlight { color: var(--accent); }
+
+    .result-img-col img {
+      width: 100%;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      object-fit: cover;
+      aspect-ratio: 3/4;
+    }
+
+    .result-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .btn-download {
+      padding: 12px 28px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: linear-gradient(135deg, var(--accent3), #00c9a7);
+      color: #000;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(67,233,123,0.3);
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(67,233,123,0.45);
+    }
+
+    .btn-new-run {
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-new-run:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108,99,255,0.1);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SPINNER
+    ══════════════════════════════════════════════════════════ */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════════════════════════════════════
+       ERROR TOAST
+    ══════════════════════════════════════════════════════════ */
+    #error-toast {
+      display: none;
+      background: rgba(255,107,107,0.12);
+      border: 1px solid rgba(255,107,107,0.35);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #ff6b6b;
+      margin-bottom: 20px;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    #error-toast.visible { display: block; }
+
+    /* ══════════════════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════════════════ */
+    footer {
+      text-align: center;
+      padding-top: 40px;
+      font-size: 12px;
+      color: var(--fg3);
+      border-top: 1px solid var(--border);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ══════════════════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .center-col { padding-top: 0; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+      .result-images { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       RESULT TABS
+    ══════════════════════════════════════════════════════════ */
+    .result-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      background: var(--bg3);
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .result-tab {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--fg2);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.03em;
+    }
+    .result-tab.active {
+      background: var(--card);
+      color: var(--fg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .result-panel { display: none; }
+    .result-panel.active { display: block; }
+
+    /* ── 3-panel view ── */
+    .result-images {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .result-img-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-img-col .img-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fg2);
+    }
+    .result-img-col .img-label.highlight { color: var(--accent3); }
+    .result-img-col img {
+      width: 100%;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      object-fit: cover;
+      aspect-ratio: 3/4;
+      cursor: zoom-in;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .result-img-col img:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    /* ── Compare slider ── */
+    .compare-wrap {
+      position: relative;
+      width: 100%;
+      max-height: 480px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: ew-resize;
+      margin-bottom: 20px;
+      background: var(--bg3);
+      aspect-ratio: 3/4;
+    }
+    .compare-wrap img.cmp-base,
+    .compare-wrap img.cmp-overlay {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+    }
+    .compare-wrap img.cmp-overlay {
+      clip-path: inset(0 50% 0 0);
+      transition: clip-path 0.02s;
+    }
+    .compare-handle {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 44px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .compare-handle-line {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: rgba(255,255,255,0.9);
+      transform: translateX(-50%);
+      box-shadow: 0 0 12px rgba(0,0,0,0.5);
+    }
+    .compare-handle-circle {
+      position: relative;
+      z-index: 2;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.4);
+      font-weight: 700;
+      color: #333;
+      letter-spacing: -2px;
+    }
+    .compare-labels {
+      position: absolute;
+      bottom: 12px;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 14px;
+      pointer-events: none;
+    }
+    .compare-labels span {
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    /* ── Time badge ── */
+    .time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .result-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.92);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      backdrop-filter: blur(8px);
+    }
+    #lightbox.open { display: flex; animation: fadeInUp 0.2s ease; }
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: var(--radius);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+    }
+    #lightbox-close {
+      position: absolute;
+      top: 20px; right: 24px;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    #lightbox-close:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Background orbs -->
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+<div class="bg-orb orb3"></div>
+
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      <div class="logo-text">
+        <h1>Virtual Try-On</h1>
+        <p>DCI-VTON · PF-AFN · Diffusion Model</p>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span class="dot"></span>
+      <span id="server-status">Server Online</span>
+    </div>
+  </header>
+
+  <!-- ── Error Toast ─────────────────────────────────────────────── -->
+  <div id="error-toast"></div>
+
+  <!-- ── Main Grid ──────────────────────────────────────────────── -->
+  <div class="main-grid">
+
+    <!-- Person Upload -->
+    <div class="upload-card" id="person-card"
+         ondrop="handleDrop(event,'person')" ondragover="handleDragOver(event,'person')" ondragleave="handleDragLeave(event,'person')">
+      <div class="card-label">① Person Photo</div>
+
+      <div class="drop-zone" id="person-drop" onclick="document.getElementById('person-file').click()">
+        <div class="zone-hint" id="person-hint">
+          <span class="icon">🧍</span>
+          <span>Drag & drop or click<br/>to upload person photo</span>
+          <span style="font-size:11px;color:var(--fg3)">JPG · PNG · WEBP</span>
+        </div>
+        <img id="person-preview" class="preview" style="display:none" alt="Person preview" />
+      </div>
+
+      <input type="file" id="person-file" accept="image/*" onchange="handleFileSelect(event,'person')" />
+      <button class="btn-browse" onclick="document.getElementById('person-file').click()">📂  Browse File</button>
+    </div>
+
+    <!-- Center Controls -->
+    <div class="center-col">
+      <div class="arrow-icon">⚡</div>
+
+      <button id="run-btn" onclick="runPipeline()">
+        ▶&nbsp; Run Try-On
+      </button>
+
+      <div class="phase-steps">
+        <div class="phase-step" id="phase-0"><span class="step-dot"></span>① Preprocess</div>
+        <div class="phase-step" id="phase-1"><span class="step-dot"></span>② Warp</div>
+        <div class="phase-step" id="phase-2"><span class="step-dot"></span>③ Inference</div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-track">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="status-text">Select images to begin</div>
+      </div>
+    </div>
+
+    <!-- Cloth Upload -->
+    <div class="upload-card" id="cloth-card"
+         ondrop="handleDrop(event,'cloth')" ondragover="handleDragOver(event,'cloth')" ondragleave="handleDragLeave(event,'cloth')">
+      <div class="card-label">② Garment</div>
+
+      <div class="drop-zone" id="cloth-drop" onclick="document.getElementById('cloth-file').click()">
+        <div class="zone-hint" id="cloth-hint">
+          <span class="icon">👕</span>
+          <span>Drag & drop or click<br/>to upload garment photo</span>
+          <span style="font-size:11px;color:var(--fg3)">flat-lay image works best</span>
+        </div>
+        <img id="cloth-preview" class="preview" style="display:none" alt="Garment preview" />
+      </div>
+
+      <input type="file" id="cloth-file" accept="image/*" onchange="handleFileSelect(event,'cloth')" />
+      <button class="btn-browse" onclick="document.getElementById('cloth-file').click()">📂  Browse File</button>
+    </div>
+  </div>
+
+  <!-- ── Log Terminal ────────────────────────────────────────────── -->
+  <div class="log-section">
+    <div class="log-header">
+      <div class="terminal-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="log-title">📟 Pipeline Log</div>
+      <div style="font-size:11px;color:var(--fg3)" id="log-timer"></div>
+    </div>
+    <div id="log-output">
+      <span class="log-line" style="color:var(--fg3)">// Waiting for input — select a person photo and garment to begin.</span>
+    </div>
+  </div>
+
+  <!-- ── Result Section ─────────────────────────────────────────── -->
+  <div id="result-section">
+    <div class="result-card">
+
+      <div class="result-header-row">
+        <div class="result-title" style="margin-bottom:0">✦ Virtual Try-On Result</div>
+        <div class="time-badge" id="result-time-badge" style="display:none">
+          ⏱ <span id="result-time-value"></span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="result-tabs">
+        <button class="result-tab active" onclick="switchTab('panel')" id="tab-panel">🖼 Three-Panel</button>
+        <button class="result-tab" onclick="switchTab('compare')" id="tab-compare">⇄ Before / After</button>
+      </div>
+
+      <!-- Panel view -->
+      <div class="result-panel active" id="panel-view">
+        <div class="result-images">
+          <div class="result-img-col">
+            <span class="img-label">Person</span>
+            <img id="result-person" src="" alt="Person" onclick="openLightbox(this.src)" />
+          </div>
+          <div class="result-img-col">
+            <span class="img-label">Garment</span>
+            <img id="result-cloth" src="" alt="Garment" onclick="openLightbox(this.src)" />
+          </div>
+          <div class="result-img-col">
+            <span class="img-label highlight">✦ Try-On Result</span>
+            <img id="result-output" src="" alt="Try-On Result" onclick="openLightbox(this.src)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Before/After compare view -->
+      <div class="result-panel" id="compare-view">
+        <div class="compare-wrap" id="compare-wrap"
+             onmousedown="startDrag(event)" ontouchstart="startDrag(event)">
+          <img class="cmp-base" id="cmp-before" src="" alt="Original" />
+          <img class="cmp-overlay" id="cmp-after" src="" alt="Try-On" />
+          <div class="compare-handle" id="compare-handle">
+            <div class="compare-handle-line"></div>
+            <div class="compare-handle-circle">◀▶</div>
+          </div>
+          <div class="compare-labels">
+            <span>Original</span>
+            <span>Try-On ✦</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <a id="download-link" class="btn-download" href="#" download="tryon_result.png">
+          ⬇&nbsp; Download Result
+        </a>
+        <button class="btn-new-run" onclick="resetApp()">↺&nbsp; New Try-On</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" onclick="closeLightbox()">
+    <span id="lightbox-close" onclick="closeLightbox()">✕</span>
+    <img id="lightbox-img" src="" alt="Zoomed" />
+  </div>
+
+  <footer>
+    <p>DCI-VTON · <a href="https://arxiv.org/pdf/2308.06101.pdf" target="_blank">Research Paper</a> · Powered by FastAPI + ngrok</p>
+  </footer>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────
+  let personFile = null;
+  let clothFile  = null;
+  let currentJobId = null;
+  let sseSource = null;
+  let startTime = null;
+  let timerInterval = null;
+
+  // ── File Handling ──────────────────────────────────────────────
+  function handleFileSelect(evt, type) {
+    const file = evt.target.files[0];
+    if (!file) return;
+    setFile(type, file);
+  }
+
+  function handleDrop(evt, type) {
+    evt.preventDefault();
+    document.getElementById(`${type}-drop`).classList.remove('drag-over');
+    const file = evt.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) setFile(type, file);
+  }
+
+  function handleDragOver(evt, type) {
+    evt.preventDefault();
+    document.getElementById(`${type}-drop`).classList.add('drag-over');
+  }
+
+  function handleDragLeave(evt, type) {
+    document.getElementById(`${type}-drop`).classList.remove('drag-over');
+  }
+
+  function setFile(type, file) {
+    if (type === 'person') personFile = file;
+    else                   clothFile  = file;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById(`${type}-preview`);
+      const hint    = document.getElementById(`${type}-hint`);
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      hint.style.display    = 'none';
+      document.getElementById(`${type}-card`).classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+    setStatus('Images loaded \u2014 click \u25b6 Run Try-On to start.');
+  }
+
+  // ── Pipeline ───────────────────────────────────────────────────
+  async function runPipeline() {
+    if (!personFile) { showError('Please select a person photo first.'); return; }
+    if (!clothFile)  { showError('Please select a garment photo first.'); return; }
+
+    hideError();
+    clearLog();
+    hideResult();
+    setRunning(true);
+    setStatus('Uploading images\u2026');
+    setProgress(2);
+
+    const form = new FormData();
+    form.append('person', personFile);
+    form.append('cloth', clothFile);
+
+    try {
+      const res  = await fetch('/api/run', { method: 'POST', body: form });
+      if (!res.ok) { const err = await res.text(); throw new Error(`Upload failed: ${err}`); }
+      const { job_id } = await res.json();
+      currentJobId = job_id;
+      startTimer();
+      streamLogs(job_id);
+      setStatus('Pipeline running on GPU\u2026');
+    } catch (e) {
+      showError(e.message);
+      setRunning(false);
+    }
+  }
+
+  function streamLogs(jobId) {
+    if (sseSource) sseSource.close();
+    sseSource = new EventSource(`/api/stream/${jobId}`);
+    sseSource.onmessage = evt => {
+      const data = JSON.parse(evt.data);
+      if (data.ping) return;
+      if (data.log === '__DONE__')  { sseSource.close(); onPipelineDone(jobId); return; }
+      if (data.log === '__ERROR__') { sseSource.close(); onPipelineError('Pipeline failed \u2014 see log.'); return; }
+      appendLog(data.log);
+      updatePhaseFromLog(data.log);
+      updateProgressFromLog(data.log);
+    };
+    sseSource.onerror = () => { sseSource.close(); pollStatus(jobId); };
+  }
+
+  function pollStatus(jobId) {
+    const iv = setInterval(async () => {
+      try {
+        const data = await (await fetch(`/api/status/${jobId}`)).json();
+        if (data.status === 'done')  { clearInterval(iv); onPipelineDone(jobId); }
+        if (data.status === 'error') { clearInterval(iv); onPipelineError(data.error || 'Unknown error'); }
+      } catch(e) {}
+    }, 2000);
+  }
+
+  async function onPipelineDone(jobId) {
+    const elapsed = stopTimer();
+    setProgress(100);
+    setPhase(-1, 'done');
+    setStatus('\u2705 Try-on complete!');
+    setRunning(false);
+
+    const resultUrl = `/api/result/${jobId}?t=${Date.now()}`;
+    const personUrl = URL.createObjectURL(personFile);
+
+    // Three-panel
+    document.getElementById('result-output').src = resultUrl;
+    document.getElementById('result-person').src  = personUrl;
+    document.getElementById('result-cloth').src   = URL.createObjectURL(clothFile);
+    document.getElementById('download-link').href = `/api/result/${jobId}`;
+
+    // Compare slider
+    document.getElementById('cmp-before').src = personUrl;
+    document.getElementById('cmp-after').src  = resultUrl;
+    setSliderPos(50);
+
+    // Time badge
+    if (elapsed) {
+      const m = Math.floor(elapsed / 60), s = elapsed % 60;
+      document.getElementById('result-time-value').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+      document.getElementById('result-time-badge').style.display = 'inline-flex';
+    }
+    showResult();
+  }
+
+  function onPipelineError(msg) {
+    stopTimer(); showError(msg); setRunning(false);
+    setStatus('\u274c Pipeline failed \u2014 see log for details');
+  }
+
+  // ── Log helpers ────────────────────────────────────────────────
+  function appendLog(line) {
+    const el = document.getElementById('log-output');
+    const span = document.createElement('span');
+    span.classList.add('log-line');
+    if      (line.includes('\u2713') || line.includes('\u2705') || line.includes('complete')) span.classList.add('ok');
+    else if (line.includes('PHASE') || line.includes('\u2501'))                               span.classList.add('hdr');
+    else if (line.includes('ERROR') || line.includes('\u274c') || line.includes('Traceback')) span.classList.add('err');
+    else if (line.includes('\u26a0') || line.includes('warn'))                               span.classList.add('warn');
+    span.textContent = line;
+    el.appendChild(span);
+    el.appendChild(document.createTextNode('\n'));
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLog() { document.getElementById('log-output').innerHTML = ''; }
+
+  // ── Phase + Progress ────────────────────────────────────────────
+  function updatePhaseFromLog(line) {
+    if      (line.includes('PHASE 1') || line.includes('PREPROCESSING')) setPhase(0);
+    else if (line.includes('PHASE 2') || line.includes('WARPING'))       setPhase(1);
+    else if (line.includes('PHASE 3') || line.includes('INFERENCE'))     setPhase(2);
+  }
+
+  function updateProgressFromLog(line) {
+    const m = line.match(/\[(\d+)\/(\d+)\]/);
+    if (m) {
+      const phase = _currentPhase;
+      const base  = phase === 0 ? 5 : phase === 1 ? 35 : 65;
+      setProgress(Math.min((parseInt(m[1]) / parseInt(m[2])) * 28 + base, 98));
+    }
+  }
+
+  let _currentPhase = -1;
+  function setPhase(idx, state='active') {
+    _currentPhase = idx;
+    for (let i = 0; i < 3; i++) {
+      const el = document.getElementById(`phase-${i}`);
+      el.className = 'phase-step';
+      if (state === 'done') el.classList.add('done');
+      else if (i < idx)    el.classList.add('done');
+      else if (i === idx)  el.classList.add('active');
+    }
+  }
+
+  // ── UI State ───────────────────────────────────────────────────
+  function setRunning(r) {
+    const btn = document.getElementById('run-btn');
+    btn.disabled = r;
+    btn.innerHTML = r ? '<span class="spinner"></span>Running\u2026' : '\u25b6&nbsp; Run Try-On';
+  }
+  function setStatus(msg) { document.getElementById('status-text').textContent = msg; }
+  function setProgress(p) { document.getElementById('progress-fill').style.width = `${p}%`; }
+  function showError(msg) {
+    const el = document.getElementById('error-toast');
+    el.textContent = '\u26a0 ' + msg; el.classList.add('visible');
+  }
+  function hideError()  { document.getElementById('error-toast').classList.remove('visible'); }
+  function showResult() {
+    const el = document.getElementById('result-section');
+    el.classList.add('visible');
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function hideResult() {
+    document.getElementById('result-section').classList.remove('visible');
+    document.getElementById('result-time-badge').style.display = 'none';
+    switchTab('panel');
+  }
+
+  // ── Result Tabs ────────────────────────────────────────────────
+  function switchTab(tab) {
+    ['panel','compare'].forEach(t => {
+      document.getElementById(`${t}-view`).classList.toggle('active', t === tab);
+      document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    });
+  }
+
+  // ── Before/After Slider ────────────────────────────────────────
+  let dragging = false;
+
+  function setSliderPos(pct) {
+    document.getElementById('cmp-after').style.clipPath = `inset(0 ${100-pct}% 0 0)`;
+    document.getElementById('compare-handle').style.left = `${pct}%`;
+  }
+
+  function startDrag(e) {
+    dragging = true; moveDrag(e);
+    window.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('touchmove', moveDrag);
+    window.addEventListener('touchend', endDrag);
+  }
+
+  function moveDrag(e) {
+    if (!dragging) return;
+    const rect = document.getElementById('compare-wrap').getBoundingClientRect();
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    setSliderPos(Math.max(0, Math.min(100, (x - rect.left) / rect.width * 100)));
+  }
+
+  function endDrag() {
+    dragging = false;
+    window.removeEventListener('mousemove', moveDrag);
+    window.removeEventListener('mouseup', endDrag);
+    window.removeEventListener('touchmove', moveDrag);
+    window.removeEventListener('touchend', endDrag);
+  }
+
+  // ── Lightbox ───────────────────────────────────────────────────
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // ── Timer ──────────────────────────────────────────────────────
+  function startTimer() {
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const t = Math.floor((Date.now() - startTime) / 1000);
+      const m = Math.floor(t/60), s = t % 60;
+      document.getElementById('log-timer').textContent = `\u23f1 ${m}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : null;
+    document.getElementById('log-timer').textContent = '';
+    startTime = null;
+    return elapsed;
+  }
+
+  // ── Reset ──────────────────────────────────────────────────────
+  function resetApp() {
+    personFile = clothFile = currentJobId = null;
+    if (sseSource) sseSource.close();
+    stopTimer();
+    ['person','cloth'].forEach(t => {
+      document.getElementById(`${t}-preview`).style.display = 'none';
+      document.getElementById(`${t}-hint`).style.display    = 'flex';
+      document.getElementById(`${t}-card`).classList.remove('has-image');
+      document.getElementById(`${t}-file`).value = '';
+    });
+    clearLog(); hideResult(); hideError();
+    setProgress(0); setPhase(-1);
+    setStatus('Select images to begin');
+    document.getElementById('log-output').innerHTML =
+      '<span class="log-line" style="color:var(--fg3)">// Ready for new try-on.</span>';
+  }
+
+  // ── Health check ───────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const data = await (await fetch('/health')).json();
+      document.getElementById('server-status').textContent =
+        data.active_jobs > 0 ? `GPU busy (${data.active_jobs} job)` : 'Server Online';
+    } catch {
+      document.getElementById('server-status').textContent = 'Connecting\u2026';
+    }
+  }
+  checkHealth();
+  setInterval(checkHealth, 10000);
+</script>
+
+</body>
+</html>
+
