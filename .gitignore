@@ -29,6 +29,7 @@ outputs/
 my_data/
 mydata/
 assets/
+warp/
 
 # API keys / Ngrok / Secrets
 .env
@@ -39,17 +40,17 @@ start_web_server.bat
 *.pem
 
 # Extra codes & scratch files
-wrp.2.py
+
 cl.py
 pair.py
 test.py
 test.sh
 train.sh
-test_cv2.py
-final.py
+
+
 
 # IDE / OS files
-.vscode/
+
 .idea/
 .DS_Store
 Thumbs.db
