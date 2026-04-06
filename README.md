@@ -24,7 +24,7 @@ A major addition to this project is the fully customized, real-time image parsin
 ## Demonstrations & Recordings
 Watch the Virtual Try-On application in full action below:
 
-<video src="assets/demo.mp4" controls="controls" style="max-width: 100%;">
+<video src="https://github.com/AyushPatil615/virtual-try-on/raw/main/assets/demo.mp4" controls="controls" style="max-width: 100%;">
   Your browser does not support the video tag.
 </video>
 
