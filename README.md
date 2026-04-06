@@ -23,7 +23,7 @@ A major addition to this project is the fully customized, real-time image parsin
 
 ## Demonstrations & Recordings
 Live video demonstrations, walkthroughs, and screen recordings of the Virtual Try-On application in action can be located locally at:
-`C:\Users\ADMIN\Videos\Screen Recordings`
+
 
 ## Dataset Structure
 The preprocessing pipeline strictly manages local generation datasets mapped identically to the original DCI-VTON VITON-HD requirements:
