@@ -1,9 +1,9 @@
-﻿from PIL import Image
+from PIL import Image
 import os, glob
 
 # person images -> parse (single-channel zeros)
-img_dir = r"my_data/test/image"
-parse_dir = r"my_data/test/image-parse-v3"
+img_dir = r"datasets/custom/test/image"
+parse_dir = r"datasets/custom/test/image-parse-v3"
 os.makedirs(parse_dir, exist_ok=True)
 
 for f in glob.glob(os.path.join(img_dir, "*")):
@@ -19,8 +19,8 @@ for f in glob.glob(os.path.join(img_dir, "*")):
 print("Created/updated parses in:", parse_dir)
 
 # cloth-warp masks -> white masks sized like cloth-warp images
-warp_dir = r"my_data/test/cloth-warp"
-warp_mask_dir = r"my_data/test/cloth-warp-mask"
+warp_dir = r"datasets/custom/test/cloth-warp"
+warp_mask_dir = r"datasets/custom/test/cloth-warp-mask"
 os.makedirs(warp_mask_dir, exist_ok=True)
 for f in glob.glob(os.path.join(warp_dir, "*")):
     if not f.lower().endswith((".jpg", ".jpeg", ".png")):
@@ -35,8 +35,8 @@ for f in glob.glob(os.path.join(warp_dir, "*")):
 print("Created/updated cloth-warp masks in:", warp_mask_dir)
 
 # unpaired-cloth-warp masks -> white masks sized like unpaired cloth warp images
-unwarp_dir = r"my_data/test/unpaired-cloth-warp"
-unwarp_mask_dir = r"my_data/test/unpaired-cloth-warp-mask"
+unwarp_dir = r"datasets/custom/test/unpaired-cloth-warp"
+unwarp_mask_dir = r"datasets/custom/test/unpaired-cloth-warp-mask"
 os.makedirs(unwarp_mask_dir, exist_ok=True)
 for f in glob.glob(os.path.join(unwarp_dir, "*")):
     if not f.lower().endswith((".jpg", ".jpeg", ".png")):
